@@ -34,7 +34,7 @@ const improvementCosts = {
 const upgradeCosts: Record<string, (level: number) => Partial<MapProps["resources"]>> = {
   House: (level) => ({ lumber: level * 10 }),
   Field: (level) => ({ grain: level * 8, water: level * 5 }),
-  "Lumber Mill": (level) => ({ people: level * 2 }),
+  "Lumber Mill": (level) => ({ lumber: level * 5 }),
   Well: (level) => ({ water: level * 10 }),
   Pasture: (level) => ({ sheep: level * 3, grain: level * 5 }),
 }
@@ -154,6 +154,39 @@ const Map = ({ gridSize, resources, setResources }: MapProps) => {
 
   const handleRemoveImprovement = () => {
     if (selectedTile === null) return
+
+    const removedImprovement = tiles[selectedTile]
+    const improvementLevel = improvementLevels[selectedTile] || 1
+
+    if (removedImprovement) {
+      setResources((prev) => {
+        const updated = { ...prev }
+
+        switch (removedImprovement) {
+          case "House":
+            updated.people = Math.max(0, updated.people - 5 * improvementLevel)
+            break
+          case "Field":
+            updated.grain = Math.max(0, updated.grain - 10 * improvementLevel)
+            break
+          case "Pasture":
+            updated.sheep = Math.max(0, updated.sheep - 5 * improvementLevel)
+            break
+          case "Lumber Mill":
+            updated.lumber = Math.max(0, updated.lumber - 10 * improvementLevel)
+            break
+          case "Well":
+            updated.water = Math.max(0, updated.water - 10 * improvementLevel)
+            break
+        }
+        const cost = improvementCosts[removedImprovement as keyof typeof improvementCosts]
+        Object.entries(cost).forEach(([key, value]) => {
+          updated[key as keyof typeof updated] += Math.floor((value! * improvementLevel))
+        })
+
+        return updated
+      })
+    }
 
     setTiles((prevTiles) => {
       const newTiles = [...prevTiles]
